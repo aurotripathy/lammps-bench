@@ -10,11 +10,12 @@ def set_freq(freq):
    """ 
    note, freq is a string
    substitute the freq in the list of commands below 
+   no need to sudo any of these commands as we'll be running inside a container 
    """
    command_list = """
-   echo "toor" | sudo -S /sbin/modprobe cpufreq_userspace
-   echo "toor" | sudo -S sudo /usr/bin/cpupower frequency-set --governor userspace
-   echo "toor" | sudo -S sudo /usr/bin/cpupower --cpu all frequency-set --freq {} 
+   /sbin/modprobe cpufreq_userspace
+   /usr/bin/cpupower frequency-set --governor userspace
+   /usr/bin/cpupower --cpu all frequency-set --freq {} 
    cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq
    """.format(freq)
 
@@ -67,52 +68,53 @@ def replace_core_count_n_thread_count(freq_str, core_count, thread_count):
 parser = argparse.ArgumentParser(description='Automation for collecting LAMMPS data')
 parser.add_argument('-c', '--core-count-list', nargs="+", type=int,
                     required=True, help="List of core counts that will be used one by one.")
-parser.add_argument('-t', '--thread-count', type=str,
+parser.add_argument('-t', '--thread-count-list', , nargs="+", type=str,
                     required=True, help="OMP threads")
-parser.add_argument('-f', '--freq_str', type=str,
+parser.add_argument('-f', '--freq-list', , nargs="+", type=str,
                     required=True, help="CPU freq in MHz, all cores")
 
 args = parser.parse_args()
 
 print('core count list', args.core_count_list)
+for freq_str in args.freq_list:
+   for core_count in args.core_count_list:
+      for thread_count in args.thread_count_list:
+         print('Using freq', freq_str)
+         set_freq(freq_str)
+         out_file_name = replace_core_count_n_thread_count(freq_str, core_count, thread_count)
 
-for core_count in args.core_count_list:
-   print('Using freq', args.freq_str)
-   set_freq(args.freq_str)
-   out_file_name = replace_core_count_n_thread_count(args.freq_str, core_count, args.thread_count)
+         print('Writing new core-count', core_count, 'and thread', thread_count,
+               ' to:', out_file_name)
 
-   print('Writing new core-count', core_count, 'and thread', args.thread_count,
-         ' to:', out_file_name)
+         process = subprocess.Popen([out_file_name], 
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE,
+                                    universal_newlines=True)
+         collect_output = []
 
-   process = subprocess.Popen([out_file_name], 
-                              stdout=subprocess.PIPE,
-                              stderr=subprocess.PIPE,
-                              universal_newlines=True)
-   collect_output = []
+         (output, err) = process.communicate()
 
-   (output, err) = process.communicate()
+         #This makes the wait possible
+         p_status = process.wait()
 
-   #This makes the wait possible
-   p_status = process.wait()
-   
-   #This will give you the output of the command being executed
-   print("Command output: \n" + output)
+         #This will give you the output of the command being executed
+         print("Command output: \n" + output)
 
-   collect_output = output.splitlines()
+         collect_output = output.splitlines()
 
 
-   # Collect lines that begin with the benchmark names
-   # Perf is not a benchmark; its an artifact of how the resuts are presented.
-   # If you are doing one benchmark, then the preface is 'Perfformance', else its the name of the benchmark
-   bench_list = ['lj', 'rhodo', 'lc', 'sw', 'water', 'eam', 'airebo', 'dpd', 'tersoff', 'Perf']
-   bench_numbers = []
-   # print('Benchmarks:')
-   for line in collect_output:
-      if list(filter(line.startswith, bench_list)) != []:
-         bench_numbers.append(float(line.split()[1]))
-       # for bench in bench_list:
-       #     if bench in line[:10]:
-       #         bench_numbers.append(float(line.split()[1]))
-       #         # print(line.strip())
-   print('Taking the geometric mean of:', bench_numbers)
-   print('Core count:', core_count, 'Geo mean:', geo_mean(bench_numbers))
+         # Collect lines that begin with the benchmark names
+         # Perf is not a benchmark; its an artifact of how the resuts are presented.
+         # If you are doing one benchmark, then the preface is 'Perfformance', else its the name of the benchmark
+         bench_list = ['lj', 'rhodo', 'lc', 'sw', 'water', 'eam', 'airebo', 'dpd', 'tersoff', 'Perf']
+         bench_numbers = []
+         # print('Benchmarks:')
+         for line in collect_output:
+            if list(filter(line.startswith, bench_list)) != []:
+               bench_numbers.append(float(line.split()[1]))
+             # for bench in bench_list:
+             #     if bench in line[:10]:
+             #         bench_numbers.append(float(line.split()[1]))
+             #         # print(line.strip())
+         print('Taking the geometric mean of:', bench_numbers)
+         print('Core count:', core_count, 'Geo mean:', geo_mean(bench_numbers))
