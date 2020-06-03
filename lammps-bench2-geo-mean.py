@@ -65,24 +65,6 @@ for core_count in args.core_count_list:
 
    collect_output = output.splitlines()
 
-   # # need to find out how much is this loop interfering with the benchmark
-   # while True:
-   #    # time.sleep(1)  # sleep 10 sec 
-   #    output = process.stdout.readline()
-   #    collect_output.append(output)
-   #    print(output.strip())
-   #    # Do something else
-   #    return_code = process.poll()
-   #    if return_code is not None:
-   #       if return_code == 0:
-   #          print('RETURN CODE', return_code, 'IS GOOD')
-   #       else:
-   #          print('RETURN CODE', return_code, 'IS NO GOOD')
-
-   #       # Process has finished, read rest of the output 
-   #       for output in process.stdout.readlines():
-   #          print(output.strip())
-   #       break
 
    # Collect lines that begin with the benchmark names
    # Perf is not a benchmark; its an artifact of how the resuts are presented.
