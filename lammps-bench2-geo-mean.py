@@ -7,11 +7,14 @@ import argparse
 import time
 
 def set_freq(freq):
-   """ note, freq is a string"""
+   """ 
+   note, freq is a string
+   substitute the freq in the list of commands below 
+   """
    command_list = """
-   sudo /sbin/modprobe cpufreq_userspace
-   sudo /usr/bin/cpupower frequency-set --governor userspace
-   sudo /usr/bin/cpupower --cpu all frequency-set --freq {} 
+   echo "toor" | sudo -S /sbin/modprobe cpufreq_userspace
+   echo "toor" | sudo -S sudo /usr/bin/cpupower frequency-set --governor userspace
+   echo "toor" | sudo -S sudo /usr/bin/cpupower --cpu all frequency-set --freq {} 
    cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq
    """.format(freq)
 
@@ -66,15 +69,17 @@ parser.add_argument('-c', '--core-count-list', nargs="+", type=int,
                     required=True, help="List of core counts that will be used one by one.")
 parser.add_argument('-t', '--thread-count', type=str,
                     required=True, help="OMP threads")
+parser.add_argument('-f', '--freq_str', type=str,
+                    required=True, help="CPU freq in MHz, all cores")
+
 args = parser.parse_args()
 
 print('core count list', args.core_count_list)
 
 for core_count in args.core_count_list:
-   freq_str = '3100MHz'
-   print('Using freq', freq_str)
-   set_freq(freq_str)
-   out_file_name = replace_core_count_n_thread_count(freq_str, core_count, args.thread_count)
+   print('Using freq', args.freq_str)
+   set_freq(args.freq_str)
+   out_file_name = replace_core_count_n_thread_count(args.freq_str, core_count, args.thread_count)
 
    print('Writing new core-count', core_count, 'and thread', args.thread_count,
          ' to:', out_file_name)
