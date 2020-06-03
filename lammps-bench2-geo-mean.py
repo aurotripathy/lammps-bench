@@ -6,6 +6,29 @@ import math
 import argparse
 import time
 
+def set_freq(freq):
+   """ note, freq is a string"""
+   command_list = """
+   sudo /sbin/modprobe cpufreq_userspace
+   sudo /usr/bin/cpupower frequency-set --governor userspace
+   sudo /usr/bin/cpupower --cpu all frequency-set --freq {} 
+   cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq
+   """.format(freq)
+
+   print(command_list)
+
+   p = subprocess.Popen(command_list, stdout=subprocess.PIPE, shell=True)
+
+   (output, err) = p.communicate()
+   p_status = p.wait()
+
+   #This will give you the output of the command being executed
+   print "Command output: " + output
+
+   output_lines = output.splitlines()
+   print(output_lines)
+
+
 def nth_root(num,root):
    return num ** (1/root)
 
@@ -16,7 +39,7 @@ def geo_mean(nums):
     return(nth_root(product, float(len(nums))))
 
 
-def replace_core_count_n_thread_count(core_count, thread_count):
+def replace_core_count_n_thread_count(freq_str, core_count, thread_count):
    out_lines = []
    with open('./run_benchmarks.sh', 'r') as in_file :
       for line in in_file:
@@ -28,7 +51,10 @@ def replace_core_count_n_thread_count(core_count, thread_count):
          else:
             out_lines.append(line)
             
-   out_file_name = '/tmp/run_benchmarks_core_count' + '_' + str(core_count) + '_' + 't_count_' + thread_count + '.sh' 
+   out_file_name = '/tmp/run_benchmarks_' + 'freq_' + freq_str + \
+                   '_core_count' + '_' + str(core_count) + \
+                   '_t_count_' + thread_count + '.sh'
+   print('name', out_file_name)
    with open(out_file_name, 'w') as out_file :
          out_file.writelines(out_lines)
    os.chmod(out_file_name, 0o777)
@@ -45,9 +71,13 @@ args = parser.parse_args()
 print('core count list', args.core_count_list)
 
 for core_count in args.core_count_list:
-   out_file_name = replace_core_count_n_thread_count(core_count, args.thread_count)
+   freq_str = '3100MHz'
+   print('Using freq', freq_str)
+   set_freq(freq_str)
+   out_file_name = replace_core_count_n_thread_count(freq_str, core_count, args.thread_count)
 
-   print('Write new core-count to:', out_file_name)
+   print('Writing new core-count', core_count, 'and thread', args.thread_count,
+         ' to:', out_file_name)
 
    process = subprocess.Popen([out_file_name], 
                               stdout=subprocess.PIPE,
