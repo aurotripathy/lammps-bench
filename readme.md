@@ -1,3 +1,9 @@
+You need to install in the same directory as the LAMMPS benchmarks
+
+<code>
+git clone https://github.com/aurotripathy/lammps-bench.git .
+</code>
+
 How to run
 
 <code>
